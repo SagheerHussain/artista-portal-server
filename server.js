@@ -10,7 +10,7 @@ connectDB();
 
 const allowedOrigins = [
   "http://localhost:5173", // Localhost (development)
-  "https://artista-seven.vercel.app", // Vercel domain (production)
+  "https://artista-portal-client.vercel.app", // Vercel domain (production)
   "https://artista.skynetsilicon.com",
 ];
 
