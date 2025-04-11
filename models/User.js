@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     profilePicture: { type: String },
     role: { type: String, enum: ['employee', 'admin'], default: 'employee' },
+    status: {type: String, enum: ["active", "resigned"], default: "active"},
     createdAt: { type: Date, default: Date.now }
 });
 

@@ -65,15 +65,13 @@ const getExpanceById = async (req, res) => {
 // Create new expense
 const createExpense = async (req, res) => {
   try {
-    const { title, description, amount, date, year, category, admin } =
+    const { title, amount, date, category, admin } =
       req.body;
 
     if (
       !title ||
-      !description ||
       !amount ||
       !date ||
-      !year ||
       !category ||
       !admin
     ) {
@@ -103,10 +101,10 @@ const createExpense = async (req, res) => {
       "December",
     ];
     const monthIndex = parseInt(date.split("-")[1], 10) - 1;
+    const year = parseInt(date.split("-")[0]);
 
     const newExpance = await Expance.create({
       title,
-      description,
       amount,
       category,
       date,
@@ -128,7 +126,7 @@ const createExpense = async (req, res) => {
 const updateExpense = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, amount, category, date, year } = req.body;
+    const { title, amount, category, date } = req.body;
 
     const months = [
       "January",
@@ -145,10 +143,11 @@ const updateExpense = async (req, res) => {
       "December",
     ];
     const monthIndex = parseInt(date.split("-")[1], 10) - 1;
+    const year = parseInt(date.split("-")[0]);
 
     const updatedExpense = await Expance.findByIdAndUpdate(
       { _id: id },
-      { title, description, amount, category, date, month: months[monthIndex], year },
+      { title, amount, category, date, month: months[monthIndex], year },
       { new: true }
     );
     if (!updatedExpense)

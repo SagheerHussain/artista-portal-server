@@ -36,6 +36,21 @@ const getSalaryById = async (req, res) => {
 };
 
 // Create new salary
+  /**
+   * Creates a new salary record.
+   * 
+   * @param {Object} req.body - Request body containing the new salary record details.
+   * @param {string} req.body.employee - The ID of the employee to whom the salary belongs.
+   * @param {number} req.body.amount - The salary amount.
+   * @param {number} [req.body.bonus=0] - The bonus amount.
+   * @param {string} req.body.status - The status of the salary ('Pending' or 'Paid').
+   * @param {string} req.body.paidDate - The date when the salary was paid in the format 'YYYY-MM-DD'.
+   * @param {number} req.body.totalAmount - The total amount of the salary.
+   * @param {string} req.body.admin - The ID of the admin who created the salary record.
+   * 
+   * @returns {Object} - Response containing the created salary record.
+   * @throws {Error} - If there is a server error.
+   */
 const createSalary = async (req, res) => {
   try {
     const {
@@ -45,17 +60,26 @@ const createSalary = async (req, res) => {
       status,
       paidDate,
       totalAmount,
-      admin,
-      // month,
-      year,
+      admin
     } = req.body;
-    
+
     const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
-    
+
     const monthIndex = parseInt(paidDate.split("-")[1], 10) - 1;
+    const year = parseInt(paidDate.split("-")[0]);
 
     if (
       !employee ||
@@ -63,9 +87,7 @@ const createSalary = async (req, res) => {
       !status ||
       !paidDate ||
       !totalAmount ||
-      !admin ||
-      // !month ||
-      !year
+      !admin 
     ) {
       return res
         .status(400)
@@ -84,7 +106,7 @@ const createSalary = async (req, res) => {
       status,
       paidDate,
       month: months[monthIndex],
-      year: Number(year),
+      year: year,
       totalAmount: Number(totalAmount),
       admin: admin,
     });
@@ -102,7 +124,26 @@ const createSalary = async (req, res) => {
 const updateSalary = async (req, res) => {
   try {
     const { id } = req.params;
-    const { employee, amount, bonus, status, paidDate, month, year, totalAmount } = req.body;
+    const { employee, amount, bonus, status, paidDate, totalAmount } = req.body;
+
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const monthIndex = parseInt(paidDate.split("-")[1], 10) - 1;
+    const year = parseInt(paidDate.split("-")[0]);
+
     const updatedSalary = await Salary.findByIdAndUpdate(
       { _id: id },
       {
@@ -111,8 +152,8 @@ const updateSalary = async (req, res) => {
         bonus: Number(bonus) || 0,
         status,
         paidDate,
-        month,
-        year: Number(year),
+        month: months[monthIndex],
+        year,
         totalAmount: Number(totalAmount),
       },
       { new: true }
@@ -121,6 +162,7 @@ const updateSalary = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Salary record not found" });
+
     res.status(200).json({
       success: true,
       message: "Salary record updated successfully",
@@ -130,7 +172,7 @@ const updateSalary = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 };
-
+   
 // Delete salary
 const deleteSalary = async (req, res) => {
   try {
@@ -185,9 +227,18 @@ const getMonthlySalariesData = async (req, res) => {
   try {
     // Array of month names
     const monthNames = [
-      'January', 'February', 'March', 'April',
-      'May', 'June', 'July', 'August',
-      'September', 'October', 'November', 'December'
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
 
     // Get all months from the current year
@@ -196,7 +247,7 @@ const getMonthlySalariesData = async (req, res) => {
       month: monthNames[i],
       year: currentYear,
       totalSalaries: 0,
-      count: 0
+      count: 0,
     }));
 
     // Get actual salaries data
@@ -205,44 +256,56 @@ const getMonthlySalariesData = async (req, res) => {
         $group: {
           _id: {
             month: { $month: "$paidDate" },
-            year: { $year: "$paidDate" }
+            year: { $year: "$paidDate" },
           },
           totalSalaries: { $sum: "$totalAmount" },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       {
         $project: {
           _id: 0,
-          month: { $month: { $dateFromParts: { year: "$_id.year", month: "$_id.month", day: 1 } } },
+          month: {
+            $month: {
+              $dateFromParts: {
+                year: "$_id.year",
+                month: "$_id.month",
+                day: 1,
+              },
+            },
+          },
           totalSalaries: 1,
           count: 1,
-          year: "$_id.year"
-        }
+          year: "$_id.year",
+        },
       },
       {
-        $sort: { year: 1, month: 1 }
-      }
+        $sort: { year: 1, month: 1 },
+      },
     ]);
 
     // Merge actual data with all months
-    const finalData = allMonths.map(month => {
-      const actualData = monthlySalariesData.find(salary => 
-        salary.month === monthNames.indexOf(month.month) + 1 && salary.year === month.year
+    const finalData = allMonths.map((month) => {
+      const actualData = monthlySalariesData.find(
+        (salary) =>
+          salary.month === monthNames.indexOf(month.month) + 1 &&
+          salary.year === month.year
       );
-      
-      return actualData ? {
-        month: month.month,
-        year: actualData.year,
-        totalSalaries: actualData.totalSalaries,
-        count: actualData.count
-      } : month;
+
+      return actualData
+        ? {
+            month: month.month,
+            year: actualData.year,
+            totalSalaries: actualData.totalSalaries,
+            count: actualData.count,
+          }
+        : month;
     });
 
     res.status(200).json({
       success: true,
       data: finalData,
-      message: "Monthly salaries data fetched successfully"
+      message: "Monthly salaries data fetched successfully",
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -255,36 +318,36 @@ const getYearlySalariesData = async (req, res) => {
       {
         $group: {
           _id: {
-            year: { $year: "$paidDate" }
+            year: { $year: "$paidDate" },
           },
           totalSalaries: { $sum: "$totalAmount" },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       {
         $project: {
           _id: 0,
           year: "$_id.year",
           totalSalaries: 1,
-          count: 1
-        }
+          count: 1,
+        },
       },
       {
-        $sort: { year: 1 }
-      }
+        $sort: { year: 1 },
+      },
     ]);
 
     // Convert USD To PKR
-    const convertedData = yearlySalariesData.map(item => ({
+    const convertedData = yearlySalariesData.map((item) => ({
       year: item.year,
       totalSalaries: item.totalSalaries,
-      count: item.count
+      count: item.count,
     }));
 
     res.status(200).json({
       success: true,
       data: convertedData,
-      message: "Yearly salaries data fetched successfully"
+      message: "Yearly salaries data fetched successfully",
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

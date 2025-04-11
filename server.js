@@ -42,6 +42,9 @@ const expenceRoutes = require("./routes/expance");
 const expanceCategoryRoutes = require("./routes/expanceCategory");
 const salaryRoutes = require("./routes/salary");
 const salesRoutes = require("./routes/sale");
+const taxRoutes = require("./routes/tax");
+const profitRoutes = require("./routes/profit");
+const announcementRoutes = require("./routes/announcement");
 
 // routes
 app.get("/", (req, res) => res.send("Artista API"));
@@ -52,6 +55,11 @@ app.use("/api/expences", expenceRoutes);
 app.use("/api/expance-category", expanceCategoryRoutes);
 app.use("/api/salaries", salaryRoutes);
 app.use("/api/sales", salesRoutes);
+app.use("/api/tax", taxRoutes);
+app.use("/api/announcements", announcementRoutes);
+
+// profit
+app.use("/api/profit", profitRoutes);
 
 // server
 app.listen(PORT, () => {
