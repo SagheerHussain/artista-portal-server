@@ -1,6 +1,7 @@
 const Sale = require("../models/Sale");
 const mongoose = require("mongoose");
 const User = require("../models/User");
+const { getUSDToPKRExchangeRates } = require("../currencyExchangeRates");
 
 const getSales = async (req, res) => {
   try {
@@ -507,6 +508,8 @@ const bulkDeleteSales = async (req, res) => {
 
 const getMonthlySalesData = async (req, res) => {
   try {
+    const conversionRate = await getUSDToPKRExchangeRates(); // 1 USD = 280 PKR
+
     // Array of month names
     const monthNames = [
       'January', 'February', 'March', 'April',
@@ -558,7 +561,7 @@ const getMonthlySalesData = async (req, res) => {
       return actualData ? {
         month: month.month,
         year: actualData.year,
-        totalSales: (actualData.totalSales * 280).toFixed(0),
+        totalSales: (actualData.totalSales * conversionRate).toFixed(0),
         count: actualData.count
       } : month;
     });
@@ -575,6 +578,9 @@ const getMonthlySalesData = async (req, res) => {
 
 const getYearlySalesData = async (req, res) => {
   try {
+
+    const conversionRate = await getUSDToPKRExchangeRates(); // 1 USD = 280 PKR
+
     const yearlySalesData = await Sale.aggregate([
       {
         $group: {
@@ -601,7 +607,7 @@ const getYearlySalesData = async (req, res) => {
     // Convert USD to PKR
     const convertedData = yearlySalesData.map(item => ({
       year: item.year,
-      totalSales: (item.totalSales * 280).toFixed(0),
+      totalSales: (item.totalSales * conversionRate).toFixed(0),
       count: item.count
     }));
 

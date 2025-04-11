@@ -146,7 +146,7 @@ const deleteTax = async (req, res) => {
 const getTaxSummary = async (req, res) => {
   try {
     const currentDate = new Date();
-    const currentMonthIndex = currentDate.getMonth(); // 0-11
+    const currentMonthIndex = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
 
     const months = [
@@ -154,55 +154,72 @@ const getTaxSummary = async (req, res) => {
       "July", "August", "September", "October", "November", "December"
     ];
 
-    const startOfMonth = new Date(currentYear, currentMonthIndex, 1);
-    const endOfMonth = new Date(currentYear, currentMonthIndex + 1, 0);
+    const allTaxes = await Tax.find().sort({ date: 1 });
 
-    const startOfYear = new Date(currentYear, 0, 1);
-    const endOfYear = new Date(currentYear, 11, 31);
+    let currentMonthTotal = 0;
+    const currentYearMonthly = {};
+    const overallMonthly = [];
+    const yearlyBuckets = {}; // {2024: [...], 2025: [...]}
 
-    // Current Month Total Percentage
-    const currentMonthTax = await Tax.aggregate([
-      {
-        $match: {
-          date: { $gte: startOfMonth, $lte: endOfMonth },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalPercentage: { $sum: "$percentage" },
-        },
-      },
-    ]);
+    allTaxes.forEach((tax) => {
+      const dateObj = new Date(tax.date);
+      const monthIndex = dateObj.getMonth();
+      const monthName = months[monthIndex];
+      const year = dateObj.getFullYear();
 
-    // Current Year Total Percentage
-    const currentYearTax = await Tax.aggregate([
-      {
-        $match: {
-          date: { $gte: startOfYear, $lte: endOfYear },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalPercentage: { $sum: "$percentage" },
-        },
-      },
-    ]);
+      // Collect for yearly buckets
+      if (!yearlyBuckets[year]) yearlyBuckets[year] = [];
+      yearlyBuckets[year].push(tax.percentage);
 
-    // Overall Total Percentage
-    const allTimeTax = await Tax.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalPercentage: { $sum: "$percentage" },
-        },
-      },
-    ]);
+      // Current Month Total
+      if (monthIndex === currentMonthIndex && year === currentYear) {
+        currentMonthTotal += tax.percentage;
+      }
 
-    const monthTotal = currentMonthTax[0]?.totalPercentage || 0;
-    const yearTotal = currentYearTax[0]?.totalPercentage || 0;
-    const overallTotal = allTimeTax[0]?.totalPercentage || 0;
+      // Current Year Monthly Breakdown
+      if (year === currentYear) {
+        if (!currentYearMonthly[monthName]) {
+          currentYearMonthly[monthName] = 0;
+        }
+        currentYearMonthly[monthName] += tax.percentage;
+      }
+
+      // Overall Record
+      const key = `${monthName} ${year}`;
+      const existing = overallMonthly.find((m) => m.label === key);
+      if (existing) {
+        existing.totalPercentage += tax.percentage;
+      } else {
+        overallMonthly.push({
+          label: key,
+          month: monthName,
+          year,
+          totalPercentage: tax.percentage,
+        });
+      }
+    });
+
+    // Current Year Average
+    const currentYearAverage =
+      Object.values(currentYearMonthly).reduce((a, b) => a + b, 0) /
+        Object.values(currentYearMonthly).length || 0;
+
+    // Overall Average
+    const overallAverage =
+      overallMonthly.reduce((sum, rec) => sum + rec.totalPercentage, 0) /
+        overallMonthly.length || 0;
+
+    // Yearly Average List
+    const yearlyAverageTax = Object.entries(yearlyBuckets).map(
+      ([year, values]) => {
+        const avg =
+          values.reduce((sum, v) => sum + v, 0) / values.length || 0;
+        return {
+          year: parseInt(year),
+          averageTax: `${avg.toFixed(2)}%`,
+        };
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -210,16 +227,28 @@ const getTaxSummary = async (req, res) => {
         currentMonth: {
           month: months[currentMonthIndex],
           year: currentYear,
-          totalPercentage: `${monthTotal.toFixed(2)}%`
+          totalPercentage: `${currentMonthTotal.toFixed(2)}%`,
         },
         currentYear: {
           year: currentYear,
-          totalPercentage: `${yearTotal.toFixed(2)}%`
+          monthlyBreakdown: Object.entries(currentYearMonthly).map(
+            ([month, total]) => ({
+              month,
+              totalPercentage: `${total.toFixed(2)}%`,
+            })
+          ),
+          averageTax: `${currentYearAverage.toFixed(2)}%`,
         },
         overall: {
-          totalPercentage: `${overallTotal.toFixed(2)}%`
-        }
-      }
+          records: overallMonthly.map((rec) => ({
+            month: rec.month,
+            year: rec.year,
+            totalPercentage: `${rec.totalPercentage.toFixed(2)}%`,
+          })),
+          averageTax: `${overallAverage.toFixed(2)}%`,
+        },
+        yearlyAverageTax, // <- new addition
+      },
     });
   } catch (error) {
     res.status(500).json({

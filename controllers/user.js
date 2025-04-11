@@ -37,7 +37,7 @@ const getUserById = async (req, res) => {
 const updateUserProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role } = req.body;
+    const { name, email, role, status } = req.body;
 
     const user = await User.findById({ _id: id });
     if (!user) return res.status(404).json({ message: "User not found", success: false });
@@ -55,6 +55,7 @@ const updateUserProfile = async (req, res) => {
         name,
         email,
         role,
+        status,
         profilePicture: profilePicturePath,
       },
       {
