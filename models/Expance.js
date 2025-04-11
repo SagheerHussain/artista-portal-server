@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const expanceSchema = new mongoose.Schema({
     title: { type: String, required: true },
-    description: { type: String },
     amount: { type: Number, required: true },
     date: { type: Date, required: true },
     month: { type: String },
