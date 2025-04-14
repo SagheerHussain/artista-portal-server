@@ -508,62 +508,56 @@ const bulkDeleteSales = async (req, res) => {
 
 const getMonthlySalesData = async (req, res) => {
   try {
-    const conversionRate = await getUSDToPKRExchangeRates(); // 1 USD = 280 PKR
+    const conversionRate = await getUSDToPKRExchangeRates();
 
-    // Array of month names
     const monthNames = [
       'January', 'February', 'March', 'April',
       'May', 'June', 'July', 'August',
       'September', 'October', 'November', 'December'
     ];
 
-    // Get all months from the current year
     const currentYear = new Date().getFullYear();
+
     const allMonths = Array.from({ length: 12 }, (_, i) => ({
       month: monthNames[i],
       year: currentYear,
       totalSales: 0,
+      totalReceived: 0,
       count: 0
     }));
 
-    // Get actual sales data
     const monthlySalesData = await Sale.aggregate([
       {
+        $match: {
+          year: currentYear,
+        }
+      },
+      {
         $group: {
-          _id: {
-            month: { $month: "$leadDate" },
-            year: { $year: "$leadDate" }
-          },
+          _id: { month: "$month", year: "$year" },
           totalSales: { $sum: "$totalAmount" },
+          totalReceived: {
+            $sum: { $add: ["$upfrontAmount", "$receivedAmount"] }
+          },
           count: { $sum: 1 }
         }
-      },
-      {
-        $project: {
-          _id: 0,
-          month: { $month: { $dateFromParts: { year: "$_id.year", month: "$_id.month", day: 1 } } },
-          totalSales: 1,
-          count: 1,
-          year: "$_id.year"
-        }
-      },
-      {
-        $sort: { year: 1, month: 1 }
       }
     ]);
 
-    // Merge actual data with all months
     const finalData = allMonths.map(month => {
-      const actualData = monthlySalesData.find(sale => 
-        sale.month === monthNames.indexOf(month.month) + 1 && sale.year === month.year
+      const actualData = monthlySalesData.find(sale =>
+        sale._id.month.toLowerCase() === month.month.toLowerCase()
       );
-      
-      return actualData ? {
-        month: month.month,
-        year: actualData.year,
-        totalSales: (actualData.totalSales * conversionRate).toFixed(0),
-        count: actualData.count
-      } : month;
+
+      return actualData
+        ? {
+            month: month.month,
+            year: actualData._id.year,
+            totalSales: (actualData.totalSales * conversionRate).toFixed(0),
+            totalReceived: (actualData.totalReceived * conversionRate).toFixed(0),
+            count: actualData.count
+          }
+        : month;
     });
 
     res.status(200).json({
@@ -578,16 +572,16 @@ const getMonthlySalesData = async (req, res) => {
 
 const getYearlySalesData = async (req, res) => {
   try {
-
-    const conversionRate = await getUSDToPKRExchangeRates(); // 1 USD = 280 PKR
+    const conversionRate = await getUSDToPKRExchangeRates();
 
     const yearlySalesData = await Sale.aggregate([
       {
         $group: {
-          _id: {
-            year: { $year: "$leadDate" }
-          },
+          _id: { year: "$year" },
           totalSales: { $sum: "$totalAmount" },
+          totalReceived: {
+            $sum: { $add: ["$upfrontAmount", "$receivedAmount"] }
+          },
           count: { $sum: 1 }
         }
       },
@@ -596,6 +590,7 @@ const getYearlySalesData = async (req, res) => {
           _id: 0,
           year: "$_id.year",
           totalSales: 1,
+          totalReceived: 1,
           count: 1
         }
       },
@@ -604,10 +599,10 @@ const getYearlySalesData = async (req, res) => {
       }
     ]);
 
-    // Convert USD to PKR
     const convertedData = yearlySalesData.map(item => ({
       year: item.year,
       totalSales: (item.totalSales * conversionRate).toFixed(0),
+      totalReceived: (item.totalReceived * conversionRate).toFixed(0),
       count: item.count
     }));
 
@@ -620,6 +615,7 @@ const getYearlySalesData = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 module.exports = {
   getSales,
