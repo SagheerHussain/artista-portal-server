@@ -10,7 +10,7 @@ const getNetProfit = async (req, res) => {
 
     // 1. Total Revenue (in USD directly)
     const sales = await Sale.find();
-    const totalRevenueUSD = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalRevenueUSD = sales.reduce((sum, sale) => sum + sale.upfrontAmount + sale.receivedAmount, 0);
 
     // 2. Salaries (PKR → USD)
     const salaries = await Salary.find();
