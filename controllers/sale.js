@@ -305,7 +305,7 @@ const getEmployeeCurrentSalesAmount = async (req, res) => {
       {
         $group: {
           _id: null,
-          totalSales: { $sum: "$totalAmount" },
+          totalSales: { $sum: { $add: ["$upfrontAmount", "$receivedAmount"] } },
         },
       },
     ]);
@@ -323,7 +323,7 @@ const getEmployeeCurrentSalesAmount = async (req, res) => {
       {
         $group: {
           _id: null,
-          totalSales: { $sum: "$totalAmount" },
+          totalSales: { $sum: { $add: ["$upfrontAmount", "$receivedAmount"] } },
         },
       },
     ]);

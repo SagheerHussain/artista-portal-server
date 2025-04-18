@@ -36,21 +36,6 @@ const getSalaryById = async (req, res) => {
 };
 
 // Create new salary
-  /**
-   * Creates a new salary record.
-   * 
-   * @param {Object} req.body - Request body containing the new salary record details.
-   * @param {string} req.body.employee - The ID of the employee to whom the salary belongs.
-   * @param {number} req.body.amount - The salary amount.
-   * @param {number} [req.body.bonus=0] - The bonus amount.
-   * @param {string} req.body.status - The status of the salary ('Pending' or 'Paid').
-   * @param {string} req.body.paidDate - The date when the salary was paid in the format 'YYYY-MM-DD'.
-   * @param {number} req.body.totalAmount - The total amount of the salary.
-   * @param {string} req.body.admin - The ID of the admin who created the salary record.
-   * 
-   * @returns {Object} - Response containing the created salary record.
-   * @throws {Error} - If there is a server error.
-   */
 const createSalary = async (req, res) => {
   try {
     const {
