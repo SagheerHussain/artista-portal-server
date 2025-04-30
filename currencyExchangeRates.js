@@ -1,4 +1,4 @@
-export const getUSDToPKRExchangeRates = async () => {
+const getUSDToPKRExchangeRates = async () => {
     try {
         const response = await fetch("https://open.er-api.com/v6/latest/USD");
         const data = await response.json();
@@ -8,3 +8,5 @@ export const getUSDToPKRExchangeRates = async () => {
         return null;
     }
 }
+
+module.exports = getUSDToPKRExchangeRates;
