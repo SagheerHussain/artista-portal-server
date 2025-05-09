@@ -21,6 +21,7 @@ const {
   getFilteredSales,
   getMonthlySalesData,
   getYearlySalesData,
+  getTotalAmounts
 } = require("../controllers/sale");
 
 const router = express.Router();
@@ -47,5 +48,6 @@ router.delete("/delete/:id", authenticateToken,  deleteSale);
 
 router.get("/monthly-sales-data", getMonthlySalesData);
 router.get("/yearly-sales-data", getYearlySalesData);
+router.get("/total-amounts", authenticateToken, admin, getTotalAmounts);
 
 module.exports = router;

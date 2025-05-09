@@ -287,13 +287,29 @@ const getEmployeeCurrentSalesAmount = async (req, res) => {
     const now = new Date();
 
     // Current month range
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
 
     // Current year range
     const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
     const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-    
+
     // Monthly Sales
     const monthlySales = await Sale.aggregate([
       {
@@ -356,7 +372,16 @@ const createSale = async (req, res) => {
       user,
     } = req.body;
 
-    if (!clientName || !projectTitle || !summary || !totalAmount || !upfrontAmount || !status || !paymentMethod || !user) {
+    if (
+      !clientName ||
+      !projectTitle ||
+      !summary ||
+      !totalAmount ||
+      !upfrontAmount ||
+      !status ||
+      !paymentMethod ||
+      !user
+    ) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
@@ -511,9 +536,18 @@ const getMonthlySalesData = async (req, res) => {
     const conversionRate = await getUSDToPKRExchangeRates();
 
     const monthNames = [
-      'January', 'February', 'March', 'April',
-      'May', 'June', 'July', 'August',
-      'September', 'October', 'November', 'December'
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
 
     const currentYear = new Date().getFullYear();
@@ -523,30 +557,30 @@ const getMonthlySalesData = async (req, res) => {
       year: currentYear,
       totalSales: 0,
       totalReceived: 0,
-      count: 0
+      count: 0,
     }));
 
     const monthlySalesData = await Sale.aggregate([
       {
         $match: {
           year: currentYear,
-        }
+        },
       },
       {
         $group: {
           _id: { month: "$month", year: "$year" },
           totalSales: { $sum: "$totalAmount" },
           totalReceived: {
-            $sum: { $add: ["$upfrontAmount", "$receivedAmount"] }
+            $sum: { $add: ["$upfrontAmount", "$receivedAmount"] },
           },
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
-    const finalData = allMonths.map(month => {
-      const actualData = monthlySalesData.find(sale =>
-        sale._id.month.toLowerCase() === month.month.toLowerCase()
+    const finalData = allMonths.map((month) => {
+      const actualData = monthlySalesData.find(
+        (sale) => sale._id.month.toLowerCase() === month.month.toLowerCase()
       );
 
       return actualData
@@ -554,8 +588,10 @@ const getMonthlySalesData = async (req, res) => {
             month: month.month,
             year: actualData._id.year,
             totalSales: (actualData.totalSales * conversionRate).toFixed(0),
-            totalReceived: (actualData.totalReceived * conversionRate).toFixed(0),
-            count: actualData.count
+            totalReceived: (actualData.totalReceived * conversionRate).toFixed(
+              0
+            ),
+            count: actualData.count,
           }
         : month;
     });
@@ -563,7 +599,7 @@ const getMonthlySalesData = async (req, res) => {
     res.status(200).json({
       success: true,
       data: finalData,
-      message: "Monthly sales data fetched successfully"
+      message: "Monthly sales data fetched successfully",
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -580,10 +616,10 @@ const getYearlySalesData = async (req, res) => {
           _id: { year: "$year" },
           totalSales: { $sum: "$totalAmount" },
           totalReceived: {
-            $sum: { $add: ["$upfrontAmount", "$receivedAmount"] }
+            $sum: { $add: ["$upfrontAmount", "$receivedAmount"] },
           },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       {
         $project: {
@@ -591,31 +627,67 @@ const getYearlySalesData = async (req, res) => {
           year: "$_id.year",
           totalSales: 1,
           totalReceived: 1,
-          count: 1
-        }
+          count: 1,
+        },
       },
       {
-        $sort: { year: 1 }
-      }
+        $sort: { year: 1 },
+      },
     ]);
 
-    const convertedData = yearlySalesData.map(item => ({
+    const convertedData = yearlySalesData.map((item) => ({
       year: item.year,
       totalSales: (item.totalSales * conversionRate).toFixed(0),
       totalReceived: (item.totalReceived * conversionRate).toFixed(0),
-      count: item.count
+      count: item.count,
     }));
 
     res.status(200).json({
       success: true,
       data: convertedData,
-      message: "Yearly sales data fetched successfully"
+      message: "Yearly sales data fetched successfully",
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
 
+const getTotalAmounts = async (req, res) => {
+  try {
+    const totalAmounts = await Sale.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalSalesAmount: { $sum: "$totalAmount" },
+          totalUpfrontAmount: { $sum: "$upfrontAmount" },
+          totalReceivedAmount: { $sum: "$receivedAmount" },
+          totalCollectedAmount: {
+            $sum: { $add: ["$upfrontAmount", "$receivedAmount"] },
+          },
+          totalPendingAmount: { $sum: "$remainingAmount" },
+        },
+      },
+    ]);
+    const totalAmount = totalAmounts[0]?.totalSalesAmount || 0;
+    const totalUpfrontAmount = totalAmounts[0]?.totalUpfrontAmount || 0;
+    const totalReceivedAmount = totalAmounts[0]?.totalReceivedAmount || 0;
+    const totalCollectedAmount = totalAmounts[0]?.totalCollectedAmount || 0;
+    const totalPendingAmount = totalAmounts[0]?.totalPendingAmount || 0;
+    res.status(200).json({
+      success: true,
+      data: {
+        totalAmount,
+        totalUpfrontAmount,
+        totalReceivedAmount,
+        totalCollectedAmount,
+        totalPendingAmount,
+      },
+      message: "Total amounts fetched successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 module.exports = {
   getSales,
@@ -637,5 +709,6 @@ module.exports = {
   bulkDeleteSales,
   getFilteredSalesByEmployee,
   getMonthlySalesData,
-  getYearlySalesData
+  getYearlySalesData,
+  getTotalAmounts,
 };

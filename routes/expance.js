@@ -14,5 +14,6 @@ router.put('/update/:id', authenticateToken, admin, updateExpense);
 router.delete('/delete/:id', authenticateToken, admin, deleteExpense);
 router.get('/monthly-expenses', authenticateToken, admin, getMonthlyExpenseData);
 router.get('/yearly-expenses', authenticateToken, admin, getYearlyExpenseData);
+router.get('/total-expenses', authenticateToken, admin, getTotalExpenses);
 
 module.exports = router;

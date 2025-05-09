@@ -341,6 +341,28 @@ const getYearlyExpenseData = async (req, res) => {
   }
 };
 
+// Total Amounts Expense
+const getTotalAmountsExpense = async (req, res) => {
+  try {
+    const totalAmounts = await Expance.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalExpenses: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: totalAmounts,
+      message: "Total amounts expense fetched successfully",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = {
   getAllExpenses,
   getTotalExpenses,
@@ -351,4 +373,5 @@ module.exports = {
   searchExpense,
   getMonthlyExpenseData,
   getYearlyExpenseData,
+  getTotalAmountsExpense,
 };

@@ -38,15 +38,8 @@ const getSalaryById = async (req, res) => {
 // Create new salary
 const createSalary = async (req, res) => {
   try {
-    const {
-      employee,
-      amount,
-      bonus,
-      status,
-      paidDate,
-      totalAmount,
-      admin
-    } = req.body;
+    const { employee, amount, bonus, status, paidDate, totalAmount, admin } =
+      req.body;
 
     const months = [
       "January",
@@ -72,7 +65,7 @@ const createSalary = async (req, res) => {
       !status ||
       !paidDate ||
       !totalAmount ||
-      !admin 
+      !admin
     ) {
       return res
         .status(400)
@@ -157,7 +150,7 @@ const updateSalary = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 };
-   
+
 // Delete salary
 const deleteSalary = async (req, res) => {
   try {
@@ -339,6 +332,27 @@ const getYearlySalariesData = async (req, res) => {
   }
 };
 
+const totalSalaryAmounts = async (req, res) => {
+  try {
+    const result = await Salary.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalSalaries: { $sum: "$totalAmount" },
+        },
+      },
+    ]);
+    const totalAmount = result[0]?.totalSalaries || 0;
+    res.status(200).json({
+      success: true,
+      data: { totalAmount },
+      message: "Total Salary Amounts fetched successfully",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = {
   getAllSalaries,
   getSalaryById,
@@ -348,4 +362,5 @@ module.exports = {
   searchSalariesByEmployee,
   getMonthlySalariesData,
   getYearlySalariesData,
+  totalSalaryAmounts,
 };
